@@ -9,7 +9,6 @@ import time
 
 
 class HAManager():
-
     base_url = ''
     auth_token = ''
     alert_active_hours_only = True
@@ -18,7 +17,6 @@ class HAManager():
     headers = {}
 
     # Create the default headers
-
 
     def __init__(self):
         self.name = "HAManager"
@@ -93,19 +91,22 @@ class HAManager():
         }
 
         for i in range(4):
-            url = f"{self.base_url}/services/light/turn_on"
-            response = post(url, json=post_data, headers=self.headers, timeout=1)
-            if response.status_code != 200:
-                print(f"Failed to turn on lights: {response.status_code}")
+            try:
+                url = f"{self.base_url}/services/light/turn_on"
+                response = post(url, json=post_data, headers=self.headers, timeout=1)
+                if response.status_code != 200:
+                    print(f"Failed to turn on lights: {response.status_code}")
 
-            time.sleep(1)
+                time.sleep(1)
 
-            url = f"{self.base_url}/services/light/turn_off"
-            response = post(url, json=turn_off_data, headers=self.headers)
-            if response.status_code != 200:
-                print(f"Failed to turn off lights: {response.status_code}")
+                url = f"{self.base_url}/services/light/turn_off"
+                response = post(url, json=turn_off_data, headers=self.headers)
+                if response.status_code != 200:
+                    print(f"Failed to turn off lights: {response.status_code}")
 
-            time.sleep(1)
+                time.sleep(1)
+            except:
+                print("An error occurred communicating with home assistant, will continue to try")
 
         self.restore_state(previous_state=current_state)
 
@@ -154,27 +155,29 @@ class HAManager():
                 print(e)
         return restore_state
 
-
     def restore_state(self, previous_state):
         print("Restoring State")
         for state in previous_state:
-            if state["attributes"]["state"] == "on":
-                post_data = {
-                    "entity_id": state["entity"],
-                    "brightness": state["attributes"]["brightness"],
-                }
-                if "rgb_color" in state["attributes"]:
-                    post_data["rgb_color"] = state["attributes"]["rgb_color"]
+            try:
+                if state["attributes"]["state"] == "on":
+                    post_data = {
+                        "entity_id": state["entity"],
+                        "brightness": state["attributes"]["brightness"],
+                    }
+                    if "rgb_color" in state["attributes"]:
+                        post_data["rgb_color"] = state["attributes"]["rgb_color"]
 
-                url = f"{self.base_url}/services/light/turn_on"
-                response = post(url, json=post_data, headers=self.headers)
-                if response.status_code != 200:
-                    print(f"Failed to turn on lights: {response.status_code}")
-            else:
-                post_data = {
-                    "entity_id": state["entity"]
-                }
-                url = f"{self.base_url}/services/light/turn_off"
-                response = post(url, json=post_data, headers=self.headers)
-                if response.status_code != 200:
-                    print(f"Failed to turn on lights: {response.status_code}")
+                    url = f"{self.base_url}/services/light/turn_on"
+                    response = post(url, json=post_data, headers=self.headers)
+                    if response.status_code != 200:
+                        print(f"Failed to turn on lights: {response.status_code}")
+                else:
+                    post_data = {
+                        "entity_id": state["entity"]
+                    }
+                    url = f"{self.base_url}/services/light/turn_off"
+                    response = post(url, json=post_data, headers=self.headers)
+                    if response.status_code != 200:
+                        print(f"Failed to turn on lights: {response.status_code}")
+            except:
+                print(f"Failed to restore light: '{state['entity']}'")
